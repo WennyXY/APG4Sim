@@ -1,0 +1,544 @@
+initialisation_prompt2: |
+  You are given a user's interaction history within a {item_name} recommender system.
+  Your task is to extract as many informative, behaviourally meaningful attributes as possible that describe the user.
+
+  Focus on discovering attributes, not summarising or refining an existing profile.
+
+  user's rating history:
+  User gave rating 1 for following {item_name}s: {rating1_items}
+  User gave rating 2 for following {item_name}s: {rating2_items}
+  User gave rating 3 for following {item_name}s: {rating3_items}
+  User gave rating 4 for following {item_name}s: {rating4_items}
+  User gave rating 5 for following {item_name}s: {rating5_items}
+
+  From the interaction history, identify and infer attributes across all relevant dimensions, including but not limited to:
+  - Preferences (e.g., genres, topics, item types, styles)
+  - Behavioural tendencies (e.g., explorer vs. loyal, passive vs. active)
+  - Engagement patterns (e.g., frequency, dwell time, feedback behavior)
+  - Decision styles (e.g., fast vs. deliberate, novelty-seeking vs. familiarity-seeking)
+  - Feedback characteristics (e.g., critical, positive, selective)
+  - Temporal patterns (e.g., stable vs. drifting interests, bursty activity)
+  - Consumption strategies (e.g., bingeing, sampling, deep-diving)
+  - Risk and diversity tolerance
+  - Interaction context signals (if available)
+  When possible, infer both long-term and short-term attributes.
+
+  Extraction Guidelines:
+  - Maximise coverage and recall: extract any attribute that is plausibly supported by the data.
+  - Keep attributes granular and atomic (one attribute = one clear concept).
+  - Avoid speculative personality traits unless clearly indicated by behavior.
+  - If evidence is weak or indirect, mark the attribute as "low confidence."
+
+  Return profile in following format:
+
+  <name of attribute 1>: <brief content>
+  Reason: <brief reason>
+
+  <name of attribute 2>: <brief content>
+  Reason: <brief reason>
+  ...
+
+
+merge_prompt: |
+  You are an expert in recommender-system user behaviour modeling.
+  Your task is to merge multiple candidate profiles of a USER into ONE coherent, concise, and actionable profile that is strictly optimised for the GIVEN TASK:
+
+  ** Task: ** {task_name} {task_description}
+  ** Task Domain: ** {item_name} recommendations
+  ** Task Example ** 
+  {ICL_example}
+
+  You are given several candidate user profiles generated independently.
+  Your goal is to MERGE them into a single, high-quality profile.
+
+  CRITICAL RULE 1: Merge Similar Attributes (Deduplicate)
+  When two or more attributes express the SAME meaning, you MUST merge them into ONE attribute. Treat attributes as “similar” if they overlap in meaning, even if wording differs.
+  For each cluster of similar attributes:
+  - Create ONE consolidated attribute with the most specific, actionable wording
+  - Preserve any extra detail if it changes {task_name} behaviour (e.g., thresholds, conditions)
+
+  CRITICAL RULE 2: Evaluate Usefulness After Merging
+  ONLY keep a few useful attributes.
+  For EVERY attribute considered during merging, you MUST evaluate it using this question:
+  “Does this attribute directly help an agent do the {task_name} in {item_name} recommendations?”
+    If YES, keep the attribute.
+    If NO, remove the attribute, even if it appears in multiple profiles.
+    If UNCERTAIN, keep it ONLY if it explains {item_name}s {action_name} differences or calibration.
+  Do NOT keep:
+  - vague personality traits
+  - descriptive but not decision-affecting,
+  - redundant attributes after consolidation
+
+  Mandatory Post-merge check (before output)
+  - No duplicated meaning remains across sections.
+  - Each kept attribute can be pointed to as affecting {action_name} outcomes.
+  - The final profile explains the user's {action_name} pattern in {item_name} recommendations.
+
+  Candidate Profiles:
+  {profiles_list}
+
+  No extra evaluation or comments. ONLY return merged profile directly:
+
+
+
+rating_prompt: |
+  You are a behavioural simulation agent designed to roleplay a specific user based on the given profile. Now you have interacted with a list of {item_name}s (in no particular order) and You MUST give rating (1-5) to all {samples_num} {item_name}s.
+  
+  Your profile:
+  {user_profile}
+
+  User has interacted with the following {item_name}s (in random order):
+  {positive_items}.
+  
+  Return your response in the following format: 
+  <title of {item_name} 1>: <your rating>/5
+  <title of {item_name} 2>: <your rating>/5
+  ...
+  <title of {item_name} {samples_num}>: <your rating>/5
+
+
+task_decision_graph_causal: |
+  You are a causality expert specialising in the analysis of {item_name} recommender systems. Your objective is to extract the causal decision-making process required to solve the given task. 
+
+  You are given:
+  1) a recommendation task name,
+  2) a short task description,
+  3) one concrete example of the task.
+
+  Your goal:
+  Infer the DECISION GRAPH for the given task.
+
+  IMPORTANT (CAUSAL FOCUS):
+  - Understand and analyse the given task, example, and the context of the specific dataset/domain. Then extract the decision graph of the specific task in the given domain and context.
+  - A decision graph is an ordered sequence of decision steps where EACH STEP can change the final task outcome.
+  - Focus ONLY on steps that causally affect the final output of the task.
+  - If removing a step would not change the output, do NOT include it.
+
+  This graph will be used to determine which user profile attributes are CAUSAL (i.e., they directly influence decisions).
+
+  Rules:
+  - Describe decisions, not model implementations.
+  - Use abstract, task-level language (e.g., “relative preference comparison”).
+  - Do NOT include LLMs, prompts, or training details.
+  - Do NOT include descriptive steps that do not affect outcomes.
+  - Be concise and ordered.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name} in {item_name}s Recommender Systems
+
+  TASK DESCRIPTION:
+  {task_description}
+
+  TASK EXAMPLE:
+  {ICL_examples}
+
+  OUTPUT FORMAT (STRICT):
+
+  Decision Graph (Causal):
+  1. <Decision node name>: <what decision is made and how it affects the outcome>
+  2. <Decision node name>: <what decision is made and how it affects the outcome>
+  ...
+
+  Causal Control Points:
+  - <which types of user information can change decisions at each step>
+
+causal_decision_graph_extraction: |
+  You are a causality expert specialising in recommender systems.
+  You are given:
+  1) a recommendation simulation task name,
+  2) a short task description,
+  3) one concrete example of the task, including data domain and item features used in the real task.
+
+  Your goal:
+  Infer the DECISION GRAPH for this task.
+
+  INPUT:
+
+  TASK:
+  {task_name} {task_description}
+
+  TASK EXAMPLE:
+  {ICL_examples}
+
+  IMPORTANT (CAUSAL FOCUS):
+  - Think step by step to understand what decisions are required to produce the final output.
+  - A decision graph is an ordered list of decision nodes where EACH node can causally change the final output or evaluation.
+  - Include ONLY decisions that directly affect the outcome.
+  - If removing a step would not change the output, do NOT include it.
+
+  RULES:
+  - Describe decisions, not model implementations.
+  - Use abstract, task-level language (e.g., “preference–item compatibility”).
+  - Do NOT mention models, prompts, training, or LLMs.
+  - Do NOT include descriptive or background-only steps.
+  - Be concise and suitable for small models.
+  - Merge attributes with the same meaning under one unified attribute name.
+  - Assign the number of user attributes per node based on its priority (high-impact nodes use more attributes).
+
+  OUTPUT FORMAT (STRICT):
+
+  Decision Graph (Causal):
+  1. <Decision node name>: <what decision is made and how it affects the outcome>
+  2. ...
+
+  Causal Control Points:
+  - <Decision node name>: <number of attributes> | <unified attribute names>
+
+  Return the output directly, no extra text.
+
+
+task_decision_graph_extraction: |
+  You are a causality expert specializing in recommender systems.
+  Your task is to extract the CAUSAL DECISION GRAPH required to solve a given
+  recommendation task.
+
+  You are given:
+  1) a recommendation task name,
+  2) a short task description,
+  3) one concrete example of the task (including item features and expected output).
+
+  Your goal:
+  Infer the DECISION GRAPH (Decision Path) for this task.
+
+  IMPORTANT (CAUSAL DEFINITION):
+  - A decision graph is an ORDERED sequence of decision steps.
+  - All steps should be grounded on the given example which include items features and expected outcome.
+  - EACH step must be CAUSAL: removing or altering the step could change
+    the final task output or evaluation metric.
+  - If a step is descriptive or optional and does NOT affect the outcome,
+    do NOT include it.
+
+  GUIDELINES:
+  - Describe decisions at an abstract task level and base the decision steps strictly on the item features provided in the task example.
+  - Do NOT include LLMs, prompts, training, or system details.
+  - Be concise, minimal, and non-overlapping.
+  - Prefer actionable steps with clear control roles.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name}
+
+  TASK DESCRIPTION:
+  {task_description}
+
+  TASK EXAMPLE:
+  {ICL_example}
+
+  OUTPUT FORMAT (STRICT):
+  Causal Control Points:
+  - <types of user information that can intervene at each step>
+  - <types of user information that can intervene at each step>
+  ...
+
+
+attributes_to_decision_mapping: |
+  SYSTEM:
+  You are a recommender-system analysis assistant.
+  Your task is to determine how user profile attributes causally influence
+  the decision process of a recommendation task.
+
+  USER:
+  You are given:
+  1) a task decision graph,
+  2) a list of user profile attributes.
+
+  Your goal:
+  For EACH attribute, identify:
+  - which decision node(s) it causally affects,
+  - or whether it has NO causal effect on the task.
+
+  IMPORTANT (CAUSAL RULE):
+  An attribute is causal ONLY IF:
+  - removing it could change the task output or evaluation metric.
+
+  If an attribute does NOT affect any decision node, mark it as NON-CAUSAL.
+
+  Do NOT invent new attributes.
+  Do NOT guess effects not supported by the task structure.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name}
+
+  TASK DESCRIPTION:
+  {task_description}
+
+  DECISION GRAPH (Causal):
+  {decision_graph}
+
+  USER PROFILE ATTRIBUTES:
+  {attribute_list}
+
+  ---
+
+  MAPPING RULES (FOLLOW EXACTLY):
+
+  1. Treat each attribute independently.
+  2. Map attributes to decision nodes based on decision impact, not wording similarity.
+  3. One attribute may map to multiple decision nodes if it affects multiple steps.
+  4. If an attribute does not clearly affect any decision node, mark it as NON-CAUSAL.
+  5. Vague personality traits or descriptive facts are usually NON-CAUSAL unless they
+    directly affect a decision step.
+
+  ---
+
+  OUTPUT FORMAT (STRICT):
+
+  Attribute-Decision Mapping:
+  <Attribute Content>
+    Affects:
+    - <decision node name> (brief explanation)
+    [OR]
+    - NON-CAUSAL (does not affect any decision step)
+  
+  <Attribute Content>
+    Affects:
+    - <decision node name> (brief explanation)
+    [OR]
+    - NON-CAUSAL (does not affect any decision step)
+  
+  ...
+
+
+causal_merge_0: |
+  SYSTEM:
+  You are a recommender-system user modeling assistant.
+  Merge multiple flat profiles into ONE task-optimised profile.
+  Be strict. Output only final attributes.
+
+  USER:
+  TASK NAME:
+  {task_name}
+
+  TASK DESCRIPTION:
+  {task_description}
+  
+  DECISION GRAPH (Causal):
+  {decision_graph}
+
+  CANDIDATE ATTRIBUTES (from multiple initial profiles):
+  {attribute_list}
+
+  You MUST do these operations internally:
+  1) Map each attribute to decision node(s) it can change.
+  2) Delete attributes that do not change task output/metric (non-causal).
+  3) Merge paraphrases that cause the same decision effect.
+  4) Resolve conflicts deterministically (stricter constraints win; one calibration style only).
+  If a required node has no attribute support, add ONE line:
+  "uncertain: missing <node of the decision graph> control"
+
+  Size caps (max):
+  Each decision node less than 3 attribtues; Total no more than 12 attribtues.
+
+  OUTPUT:
+  Only the final merged attributes as bullet points.
+  No headings. No explanations. No diagnostics.
+
+
+causal_merge_1: |
+  You are a causality expert specialising in recommender systems.
+  Your task is to causally merge user attributes so that the final profile
+  controls the decision process of the given task.
+
+  You are given:
+  1) a recommendation task,
+  2) its causal decision graph,
+  3) a set of initialised user attributes extracted from interaction history.
+
+  Your goal:
+  Merge these attributes into ONE task-optimized profile using CAUSAL merging,
+  not semantic summarization.
+
+  IMPORTANT (CAUSAL RULE):
+  An attribute is kept ONLY IF it controls at least one decision step in the
+  decision graph. Attributes that do not change any decision outcome MUST be removed.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name}
+
+  TASK DESCRIPTION:
+  {task_description}
+
+  DECISION GRAPH (Causal):
+  {decision_graph}
+
+  INITIALISED ATTRIBUTES (from multiple profiles):
+  {attribute_list}
+
+  ---
+
+  CAUSAL MERGE PROCEDURE (FOLLOW EXACTLY):
+  1. An attribute is KEEP only if removing it would change the task output.
+  2. Group kept attributes by decision node.
+  3. Merge similar attributes within the same node.
+  4. Resolve conflicts:
+    - constraints → stricter wins
+    - preferences → higher priority wins
+  5. For EACH decision node:
+    - If supported → output attributes
+    - If unsupported → output:
+      "uncertain: no evidence for <node>"
+  6. Max 2 attributes per node. Max 10 total.
+
+  OUTPUT:
+  Bullet list only. No explanations.
+
+causal_merge_ml_1mrank: |
+  You are a causality expert specialising in recommender systems.
+  Your task is to causally merge user attributes so that the final profile controls the decision process of the given task.
+
+  You are given:
+  1) a recommendation task,
+  2) its causal decision graph,
+  3) a set of initialised user attributes extracted from interaction history.
+
+  Your goal:
+  Merge these attributes into ONE task-optimized profile using CAUSAL merging, not semantic summarisation.
+
+  IMPORTANT (CAUSAL RULE):
+  An attribute is kept ONLY IF it controls at least one decision step in the
+  decision graph. Attributes that do not change any decision outcome MUST be removed.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name}
+
+  TASK DESCRIPTION:
+  {task_description}
+
+  DECISION GRAPH (Causal. Should be followed strictly):
+  {decision_graph}
+
+  INITIALISED ATTRIBUTES:
+  {attribute_list}
+
+  ---
+
+  CAUSAL MERGE PROCEDURE (FOLLOW EXACTLY):
+  1. An attribute is KEEP only if removing it would change the task output.
+  2. Group kept attributes by decision node.
+  3. Merge similar attributes within the same node. Deduplicate.
+  4. Resolve conflicts:
+    - constraints → stricter wins
+    - preferences → higher priority wins
+  5. For EACH decision node:
+    - If supported → output attributes
+    - If unsupported → output:
+      "uncertain: no evidence for <node>"
+  6. Each node 1-3 attributes. Max 12 total.
+
+  OUTPUT:
+  No extra evaluation or comments. Return merged profile directly:
+
+causal_merge_test: |
+  You are a causality expert specialising in recommender systems.
+  Your task is to causally merge user attributes so that the final profile controls the decision process of the given task.
+
+  You are given:
+  1) a recommendation task,
+  2) its causal decision graph,
+  3) a set of initialised user attributes extracted from interaction history.
+
+  Your goal:
+  Merge these attributes into ONE task-optimised profile using semantic merging and CAUSAL filtering.
+
+  IMPORTANT (CAUSAL RULE):
+  An attribute is kept ONLY IF it controls at least one decision step in the
+  decision graph. Attributes that do not change any decision outcome MUST be removed.
+
+  ---
+
+  CAUSAL MERGE PROCEDURE (FOLLOW EXACTLY):
+  CRITICAL RULE 1: Merge Similar Attributes (Deduplicate)
+  When two or more attributes express the SIMILAR meaning, you MUST merge them into ONE attribute. Treat attributes as “similar” if they overlap in meaning, even if wording differs.
+  For each cluster of similar attributes:
+  - Create ONE consolidated attribute with the most specific, actionable wording.
+  - Preserve any extra detail if it changes {task_name} behaviour (e.g., thresholds, conditions)
+
+
+  CRITICAL RULE 2: Decision-graph mapping 
+  For EVERY consolidated attribute, MUST evaluate it based on task decision graph:
+  "Whether this attribute can be mapped to one or more decision graph nodes that it can causally influence in the {task_name} for {item_name} recommendations?"
+    If YES, keep the attribute.
+    If NO, remove the attribute, even if it appears multiple times.
+    If UNCERTAIN, keep it ONLY if it explains {item_name}s {action_name} differences or calibration.
+
+  Do NOT keep:
+  - vague personality traits
+  - descriptive but not decision-affecting,
+  - redundant attributes after consolidation
+
+  Mandatory Post-merge check (before output)
+  - No duplicated meaning remains.
+  - Decision graph is strictly followed.
+  - Each kept attribute can be pointed to decision graph node(s).
+
+  INPUT:
+  TASK NAME:
+  {task_name} {task_description}
+
+  TASK EXAMPLE (Help understand the task):
+  {ICL_example}
+
+  DECISION GRAPH (Causal. Should be followed strictly):
+  {decision_graph}
+
+  INITIALISED ATTRIBUTES:
+  {attribute_list}
+
+  OUTPUT:
+  No extra evaluation or comments. Return merged profile only:
+
+
+causal_merge_2: |
+  You are a causality expert specialising in recommender systems.
+  Merge multiple flat profiles into ONE task-optimised profile.
+  Be strict. Output only final attributes.
+
+  You are given:
+  1) a recommendation task,
+  2) its causal decision graph,
+  3) a set of initialised user attributes extracted from interaction history.
+
+  Your goal:
+  Merge these attributes into ONE task-optimised profile using CAUSAL merging,
+  not semantic summarization.
+
+  IMPORTANT (CAUSAL RULE):
+  An attribute is kept ONLY IF it controls at least one decision step in the
+  decision graph. Attributes that do not change any decision outcome MUST be removed.
+
+  INPUT:
+
+  TASK NAME:
+  {task_name} {task_description}
+
+  DECISION GRAPH (Causal. Follow strictly):
+  {decision_graph}
+
+  INITIALISED ATTRIBUTES:
+  {attribute_list}
+
+  ---
+
+  CAUSAL MERGE PROCEDURE (FOLLOW EXACTLY):
+  1. Map each attribute to decision node(s) it can change.
+  2. Delete attributes that do not change task output/metric (non-causal). But Preserve any extra detail if it changes {task_name} behaviour (e.g., thresholds, conditions)
+  3. Merge similar attributes within the same node. Deduplicate.
+  4. Resolve conflicts:
+    - constraints → stricter wins
+    - preferences → higher priority wins
+  5. For EACH decision node:
+    - If supported → output attributes
+    - If unsupported → output:
+      "uncertain: no evidence for <node>"
+
+  OUTPUT:
+  Bullet list with brief explanation.
