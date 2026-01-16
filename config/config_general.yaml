@@ -1,0 +1,8 @@
+llm: 
+temperature: 0.8
+log_path: output/log/
+seed: 2025
+
+ml_1m_item: dataset/ml_1m_item.csv
+ml_1m_user: dataset/ml_1m_user.csv
+ml_1m_rating: dataset/ml_1m_rating.csv
