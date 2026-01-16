@@ -1,0 +1,13 @@
+[{
+  "task_name":"Discrimination task (n out of K and n < K)",
+  "task_description": "This is a classification problem. You should evaluate a pool of candidate items to distinguish and select a specific subset of options that the user is most likely to interact with, effectively separating the target 'top N' choices from the rest based on specific trade-offs (e.g., 'User prefers Item A over B and C').",
+  "action_name": "discrimination/selection",
+  "decision_graph": ""
+},{
+  "task_name":"Rating prediction",
+  "task_description": "Assign a rating score (1-5) to the provided items that the user has already interacted with based on the user's profile. The rating represents how much the user would like this item. It focuses on the intensity of satisfaction. Produce ratings that are consistent, preference-driven, and similar to how a real user would rate items. ",
+  "action_name": "rating",
+  "decision_graph": ""
+}
+  ...
+]
