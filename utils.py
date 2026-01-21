@@ -41,8 +41,8 @@ def load_LLM(config):
                 deployment_name=config.llm.replace('azure:',''),
                 temperature = config.temperature,
                 api_key=config.azure_api_key,
-                azure_endpoint='https://xinye-resource.cognitiveservices.azure.com/',
-                api_version='2025-04-01-preview',
+                azure_endpoint='',
+                api_version='',
                 max_retries=5,
                 top_p = config.top_p if hasattr(config, 'top_p') else 1.0,
                 seed = config["seed"]
@@ -53,7 +53,7 @@ def load_LLM(config):
                 max_tokens = 4096,
                 model=config.llm.replace('azure:',''),
                 temperature = config.temperature,
-                api_base='https://xinye-resource.services.ai.azure.com/openai/v1/',
+                api_base='',
                 api_key=config.azure_api_key,
                 max_retries=5,
                 is_chat_model = True,
@@ -77,7 +77,7 @@ def load_client(config):
     from openai import AzureOpenAI
     client = AzureOpenAI(
         api_version="2024-12-01-preview",
-        azure_endpoint="https://xinye-resource.cognitiveservices.azure.com/",
+        azure_endpoint="",
         api_key=config.azure_api_key,
         azure_deployment=config.llm.replace('azure:',''),
     )
