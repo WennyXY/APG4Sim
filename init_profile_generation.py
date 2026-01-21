@@ -51,7 +51,6 @@ async def main(args):
     args.output_file = args.output_file.replace('.csv', '_'+str(lt)+'.csv')
     # load llm
     config.temperature = 0.1
-    # config.temperature = 1
     client = utils.load_client(config)
     
     # data preparation
