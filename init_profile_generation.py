@@ -1,6 +1,3 @@
-# 改自profile initialisation.py
-# initialise 3 profiles
-# merge and filter by tasks
 import re
 import random
 import numpy as np
@@ -53,8 +50,8 @@ async def main(args):
     lt = time.strftime('%m-%d %H:%M', time.localtime())
     args.output_file = args.output_file.replace('.csv', '_'+str(lt)+'.csv')
     # load llm
-    # config.temperature = 0.1
-    config.temperature = 1
+    config.temperature = 0.1
+    # config.temperature = 1
     client = utils.load_client(config)
     
     # data preparation
@@ -87,16 +84,10 @@ async def main(args):
         dataset_context = '; '.join(negative_items[0].keys())
         
         profiles_list = await profile_generator.run(positive_items=positive_items, negative_items=negative_items, dataset_context=dataset_context)
-        # print(len(profiles_list))
+
         avatars_info[userid] = {}
-        # avatars_info[userid] = {
-        #     "discrimination_profile": task_specific_profiles_dict['discrimination/selection'],
-        #     "rating_profile": task_specific_profiles_dict['rating'],
-        #     "ranking_profile": task_specific_profiles_dict['ranking']
-        # }
         for i, profile_score in enumerate(profiles_list):
             avatars_info[userid]['init_profile'+str(i)] = profile_score['profile']
-            # avatars_info[userid]['init_profile'+str(i)+'score'] = profile_score['rating_score']
     df = pd.DataFrame.from_dict(avatars_info, orient='index')
     df.index.name = 'userid'
     df = df.reset_index()
@@ -105,9 +96,9 @@ async def main(args):
         df.to_csv(args.output_file, index=False)
         print('save at: ',args.output_file)
     except:
-        df.to_csv(f"/Users/wenny/Documents/study/PhD/simulation_experiment/AutoProfileGenerator/output/{item_name}_{lt}_task_aware_profile.csv", index=False)
+        df.to_csv(f"output/{item_name}_{lt}_task_aware_profile.csv", index=False)
         
-        print(f"save at: /Users/wenny/Documents/study/PhD/simulation_experiment/AutoProfileGenerator/output/{item_name}_{lt}_task_aware_profile.csv")
+        print(f"save at: output/{item_name}_{lt}_task_aware_profile.csv")
     return 1
 
 
