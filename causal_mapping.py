@@ -375,7 +375,7 @@ async def main(args):
     except:
         df.to_csv(f"output/{item_name}_{lt}_task_aware_profile.csv", index=False)
         
-        print(f"save at: /Users/wenny/Documents/study/PhD/simulation_experiment/AutoProfileGenerator/output/{item_name}_{lt}_task_aware_profile.csv")
+        print(f"save at: output/{item_name}_{lt}_task_aware_profile.csv")
     return 1
 
 
